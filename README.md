@@ -12,7 +12,7 @@ StreamSnatch is a simple, full-stack video downloader and file converter web app
 - **Tools:** FFmpeg, yt-dlp
 
 ## Screenshots
-![Homepage](./screenshots/home.png)
+![Homepage](frontend/screenshots/home.png)
 
 ## How to Run Locally
 
