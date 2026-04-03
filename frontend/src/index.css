@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@layer components {
+  .animate-shimmer {
+    animation: shimmer 1.5s infinite linear;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+}
+
+@keyframes custom-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .animate-custom-fade {
+    animation: custom-fade-in 0.3s ease-out forwards;
+  }
+}
