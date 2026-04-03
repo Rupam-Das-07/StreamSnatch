@@ -57,9 +57,21 @@ def normalize_title(title):
 
 def common_ydl_opts(prefer_container, restrict_filenames, include_postprocessors):
     ydl_opts = {
-        "outtmpl": {"default": str(DOWNLOADS_DIR / "%(title).200s [%(id)s].%(ext)s")},
+        # Secure Output Template
+        "outtmpl": {"default": str(DOWNLOADS_DIR / "%(title)s.%(ext)s")},
         "paths": {"home": str(DOWNLOADS_DIR), "temp": str(TEMP_DIR)},
-        "logger": None, "nopart": False, "noprogress": True, "quiet": True,
+        "logger": None, "nopart": False, "noprogress": True,
+        
+        # Stability Options
+        "quiet": False,
+        "nocheckcertificate": True,
+        "geo_bypass": True,
+        
+        # Browser-like Headers to reduce bot detection
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+        },
+        
         "no_warnings": True, "concurrent_fragment_downloads": 4, "retries": 10,
         "fragment_retries": 10, "skip_unavailable_fragments": True, "continuedl": True,
         
@@ -96,6 +108,11 @@ def extract_info(url, download, fmt, prefer_container, restrict_filenames):
         opts["progress_hooks"] = [hook]
 
     try:
+        if download:
+            _print_log("-> Starting initial yt-dlp metadata extraction phase with download flag TRUE...")
+        else:
+            _print_log("-> Starting initial yt-dlp metadata extraction phase...")
+
         with ytdlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=download)
             
@@ -107,7 +124,8 @@ def extract_info(url, download, fmt, prefer_container, restrict_filenames):
                     for entry in info['entries']:
                         if entry and 'title' in entry:
                             entry['title'] = normalize_title(entry['title'])
-                            
+
+        _print_log("<- yt-dlp metadata extraction phase completed securely.")                            
         return info, files
     except Exception as e:
         print(f"yt-dlp extraction failed for URL {url}: {str(e)}")
@@ -202,12 +220,23 @@ def _run_single_download(url, fmt, include_pp, progress_cb):
                 captured.append(p)
                 
     opts = common_ydl_opts(prefer_container="mp4" if include_pp else None, restrict_filenames=False, include_postprocessors=include_pp)
-    opts.update({"format": fmt, "noprogress": True, "quiet": True})
+    opts.update({"format": fmt, "noprogress": True})
     opts["progress_hooks"] = [hook]
     
-    with ytdlp.YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-    return info, (captured[-1] if captured else None)
+    try:
+        _print_log(f"-> Starting background yt-dlp file download phase for format '{fmt}'...")
+        with ytdlp.YoutubeDL(opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            
+        if captured:
+            _print_log(f"<- yt-dlp background download phase natively processed file: {captured[-1].name}")
+        else:
+            _print_log("<- yt-dlp background download phase finished but no file was uniquely captured.")
+            
+        return info, (captured[-1] if captured else None)
+    except Exception as e:
+        _print_log(f"Background download failed fatally: {str(e)}")
+        raise
 
 def _ffmpeg_merge(video_path, audio_path, out_path):
     cmd = [
