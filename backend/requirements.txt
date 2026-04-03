@@ -1,0 +1,6 @@
+Flask
+Flask-CORS
+Flask-SocketIO
+yt-dlp
+gunicorn
+eventlet

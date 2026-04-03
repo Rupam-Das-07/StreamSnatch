@@ -69,7 +69,7 @@ def video_info():
         url = (data.get("url") or "").strip()
         is_playlist_mode = data.get("is_playlist_mode", False)
 
-        if not url: return jsonify({"error": "Missing 'url' parameter"}), 400
+        if not url: return jsonify({"success": False, "error": "Missing 'url' parameter"}), 400
 
         url = _normalize_youtube_url(url, keep_playlist=is_playlist_mode)
         _print_log(f"Fetching metadata for URL: {url} (Playlist Mode: {is_playlist_mode})")
@@ -193,14 +193,14 @@ def video_info():
         })
 
     except Exception as exc:
-        return jsonify({"error": f"Video info error: {str(exc)}"}), 500
+        return jsonify({"success": False, "error": f"Video info error: {str(exc)}"}), 500
 
 @app.post("/api/download")
 def download_handler():
     try:
         data = request.get_json(silent=True) or {}
         url = (data.get("url") or "").strip()
-        if not url: return jsonify({"error": "Missing 'url' parameter"}), 400
+        if not url: return jsonify({"success": False, "error": "Missing 'url' parameter"}), 400
 
         url = _normalize_youtube_url(url, keep_playlist=False)
         task_id = data.get("task_id") or str(uuid.uuid4())
@@ -210,14 +210,14 @@ def download_handler():
         threading.Thread(target=run_download_background, args=(socketio, task_id, url, format_id, kind), daemon=True).start()
         return jsonify({"ok": True, "task_id": task_id})
     except Exception as exc:
-        return jsonify({"error": f"Download handler error: {str(exc)}"}), 500
+        return jsonify({"success": False, "error": f"Download handler error: {str(exc)}"}), 500
 
 @app.post("/api/download-playlist")
 def download_playlist_handler():
     try:
         data = request.get_json(silent=True) or {}
         url = (data.get("url") or "").strip()
-        if not url: return jsonify({"error": "Missing 'url' parameter"}), 400
+        if not url: return jsonify({"success": False, "error": "Missing 'url' parameter"}), 400
 
         url = _normalize_youtube_url(url, keep_playlist=True)
         playlist_task_id = data.get("playlist_task_id") or f"pl_{uuid.uuid4()}"
@@ -254,7 +254,7 @@ def download_playlist_handler():
         threading.Thread(target=run_playlist, daemon=True).start()
         return jsonify({"ok": True, "playlist_task_id": playlist_task_id})
     except Exception as exc:
-        return jsonify({"error": f"Playlist handler error: {str(exc)}"}), 500
+        return jsonify({"success": False, "error": f"Playlist handler error: {str(exc)}"}), 500
 
 @app.get("/api/files")
 def list_files():
@@ -276,26 +276,26 @@ def list_files():
         items.sort(key=lambda x: x["modified"], reverse=True)
         return jsonify({"ok": True, "files": items})
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 @app.get("/api/files/<path:filename>")
 def serve_file(filename):
     try:
         file_path = DOWNLOADS_DIR / filename
-        if not file_path.exists() or not file_path.is_file(): return jsonify({"error": "File not found"}), 404
+        if not file_path.exists() or not file_path.is_file(): return jsonify({"success": False, "error": "File not found"}), 404
         try: file_path.resolve().relative_to(DOWNLOADS_DIR.resolve())
-        except ValueError: return jsonify({"error": "Access denied"}), 403
+        except ValueError: return jsonify({"success": False, "error": "Access denied"}), 403
         return send_from_directory(DOWNLOADS_DIR, filename, as_attachment=True)
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 @app.get("/api/save/<task_id>")
 def save_by_task(task_id):
     try:
         with completed_task_files_lock: file_path = completed_task_files.get(task_id)
-        if not file_path or not file_path.exists(): return jsonify({"error": "File not found"}), 404
+        if not file_path or not file_path.exists(): return jsonify({"success": False, "error": "File not found"}), 404
         try: rel_path = file_path.relative_to(DOWNLOADS_DIR)
-        except ValueError: return jsonify({"error": "File access error"}), 500
+        except ValueError: return jsonify({"success": False, "error": "File access error"}), 500
 
         with temp_files_lock: temp_files = temp_files_by_task.pop(task_id, [])
 
@@ -314,7 +314,7 @@ def save_by_task(task_id):
         threading.Thread(target=cleanup_all_files, daemon=True).start()
         return send_from_directory(DOWNLOADS_DIR, str(rel_path), as_attachment=True)
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 500
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 @app.route("/api/convert", methods=["POST"])
 def convert_handler():
@@ -324,28 +324,28 @@ def convert_handler():
         print("FORM:", request.form)
 
         if "file" not in request.files:
-            return jsonify({"error": "No file uploaded"}), 400
+            return jsonify({"success": False, "error": "No file uploaded"}), 400
             
         file = request.files["file"]
         
         target_format = request.form.get("format")
         if not target_format:
-            return jsonify({"error": "Missing format"}), 400
+            return jsonify({"success": False, "error": "Missing format"}), 400
             
         target_format = target_format.lower()
         
         if not file.filename or file.filename == "":
-            return jsonify({"error": "Invalid file"}), 400
+            return jsonify({"success": False, "error": "Invalid file"}), 400
 
         file.seek(0, os.SEEK_END)
         file_size = file.tell()
         file.seek(0)
         
         if file_size > 100 * 1024 * 1024:
-            return jsonify({"error": "File too large"}), 400
+            return jsonify({"success": False, "error": "File too large"}), 400
 
         if target_format not in ["mp3", "mp4", "mkv"]:
-            return jsonify({"error": "Unsupported format"}), 400
+            return jsonify({"success": False, "error": "Unsupported format"}), 400
             
         safe_name = secure_filename(file.filename)
         input_filename = f"{uuid.uuid4().hex}_{safe_name}"
@@ -362,24 +362,29 @@ def convert_handler():
         except Exception as conv_err:
             cleanup_files_later([str(input_path)], delay=0)
             print(f"Conversion Error: {conv_err}")
-            return jsonify({"error": "Conversion failed"}), 500
+            return jsonify({"success": False, "error": "Conversion failed"}), 500
             
     except Exception as e:
         print(f"Unexpected Server Error: {e}")
-        return jsonify({"error": "Server rejected the conversion request"}), 500
+        return jsonify({"success": False, "error": "Server rejected the conversion request"}), 500
 
 @app.errorhandler(404)
-def not_found(error): return jsonify({"error": "Endpoint not found"}), 404
+def not_found(error): return jsonify({"success": False, "error": "Endpoint not found"}), 404
 
 @app.errorhandler(500)
-def internal_error(error): return jsonify({"error": "Internal server error"}), 500
+def internal_error(error): return jsonify({"success": False, "error": "Internal server error"}), 500
+
+# Initialize cleanup scheduler safely to prevent duplicate executions
+# WERKZEUG_RUN_MAIN triggers safely in the dev worker process. 
+# We explicitly evaluate the DEBUG env var early rather than relying on delayed app.debug evaluation.
+is_dev = os.environ.get("DEBUG", "false").lower() == "true"
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not is_dev:
+    start_cleanup_scheduler()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
     host = os.environ.get("HOST", "0.0.0.0")
     debug = os.environ.get("DEBUG", "false").lower() == "true"
-    
-    start_cleanup_scheduler()
     
     if FFMPEG_PATH and FFPROBE_PATH:
         print(f"FFmpeg tracking: Available")
