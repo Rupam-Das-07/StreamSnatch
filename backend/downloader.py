@@ -67,16 +67,16 @@ def common_ydl_opts(prefer_container, restrict_filenames, include_postprocessors
         "nocheckcertificate": True,
         "geo_bypass": True,
         
-        # Browser-like Headers to reduce bot detection
+        # Browser-like Headers to reduce bot detection (Explicitly mapped exactly to user request)
         "http_headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         },
         
         "no_warnings": True, "concurrent_fragment_downloads": 4, "retries": 10,
         "fragment_retries": 10, "skip_unavailable_fragments": True, "continuedl": True,
         
-        # Conditionally load cookies only if the file actively exists
-        "cookiefile": str(COOKIES_FILE) if COOKIES_FILE.exists() else None,
+        # Hardcoded to EXACT file name directly mirroring user specifications
+        "cookiefile": "www.youtube.com_cookies.txt",
         
         "restrictfilenames": restrict_filenames, "writesubtitles": False,
         "writeautomaticsub": False, "ignoreerrors": False, "extract_flat": False,
