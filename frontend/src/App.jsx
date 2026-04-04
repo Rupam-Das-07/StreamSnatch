@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import io from "socket.io-client";
+import { BASE_URL } from "./config";
 import Navbar from "./components/layout/Navbar";
 import Searchbar from "./components/downloader/Searchbar";
 import VideoInfo from "./components/downloader/VideoInfo";
@@ -12,7 +13,7 @@ import SkeletonCard from "./components/ui/SkeletonCard";
 import Converter from "./components/converter/Converter";
 import Signup from "./components/auth/Signup";
 import Login from "./components/auth/Login";
-const socket = io("http://127.0.0.1:5000");
+const socket = io(BASE_URL);
 
 function App() {
   const [activeTab, setActiveTab] = useState("downloader");
@@ -124,7 +125,7 @@ function App() {
       fetchControllerRef.current = controller;
 
       const response = await axios.post(
-        "http://127.0.0.1:5000/api/video-info",
+        `${BASE_URL}/api/video-info`,
         { url, is_playlist_mode: forcePlaylist },
         { signal: controller.signal }
       );
@@ -207,7 +208,7 @@ function App() {
     setError("");
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/api/download", {
+      const response = await axios.post(`${BASE_URL}/api/download`, {
         url: url,
         format_id: formatId,
         task_id: taskId,
@@ -278,7 +279,7 @@ function App() {
     setError("");
 
     axios
-      .post("http://127.0.0.1:5000/api/download-playlist", {
+      .post(`${BASE_URL}/api/download-playlist`, {
         url: url,
         format_id: formatId,
         playlist_task_id: playlistTaskId,

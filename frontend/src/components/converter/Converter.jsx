@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BASE_URL } from '../../config';
 
 const Converter = () => {
   const [file, setFile] = useState(null);
@@ -46,7 +47,7 @@ const Converter = () => {
     formData.append('format', format);
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/convert', {
+      const response = await fetch(`${BASE_URL}/api/convert`, {
         method: 'POST',
         body: formData,
       });

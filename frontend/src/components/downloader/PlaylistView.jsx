@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { BASE_URL } from "../../config";
 
 const formatDuration = (seconds) => {
   if (!seconds) return "0:00";
@@ -134,7 +135,7 @@ export default function PlaylistView({
         }));
 
         try {
-          await axios.post("http://127.0.0.1:5000/api/download", {
+          await axios.post(`${BASE_URL}/api/download`, {
             url: `https://www.youtube.com/watch?v=${entryId}`,
             format_id: chosenFormat, 
             task_id: taskId,
@@ -243,7 +244,7 @@ export default function PlaylistView({
     if (!formatsCache[id] && !fetchingFormats[id]) {
       setFetchingFormats(prev => ({ ...prev, [id]: true }));
       try {
-        const response = await axios.post("http://127.0.0.1:5000/api/video-info", {
+        const response = await axios.post(`${BASE_URL}/api/video-info`, {
           url: `https://www.youtube.com/watch?v=${id}`,
           is_playlist_mode: false
         });

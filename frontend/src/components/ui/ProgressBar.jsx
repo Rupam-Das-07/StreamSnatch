@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { BASE_URL } from "../../config";
 
 function ProgressBar({ progress, onCancel, currentTheme, onDownloadComplete }) {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -11,7 +12,7 @@ function ProgressBar({ progress, onCancel, currentTheme, onDownloadComplete }) {
       // Create a temporary anchor element to trigger the download
       const link = document.createElement("a");
       const taskId = progress.task_id || progress.download_id;
-      link.href = `http://127.0.0.1:5000/api/save/${taskId}`;
+      link.href = `${BASE_URL}/api/save/${taskId}`;
       link.download = progress.filename || ""; // Use filename if available
       link.target = "_blank"; // Open in new tab/window
       document.body.appendChild(link);
@@ -28,7 +29,7 @@ function ProgressBar({ progress, onCancel, currentTheme, onDownloadComplete }) {
       console.error("Error triggering download:", error);
       // Fallback: try to open the URL directly
       window.open(
-        `http://127.0.0.1:5000/api/save/${
+        `${BASE_URL}/api/save/${
           progress.task_id || progress.download_id
         }`,
         "_blank"
