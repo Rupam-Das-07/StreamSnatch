@@ -97,9 +97,6 @@ def build_ydl_options(prefer_container, restrict_filenames, include_postprocesso
         "skip_unavailable_fragments": True,
         "continuedl": True,
 
-        # Use cookies if the file exists (for age-gated or private videos)
-        "cookiefile": "www.youtube.com_cookies.txt",
-
         # Other settings
         "restrictfilenames": restrict_filenames,
         "writesubtitles": False,
@@ -114,6 +111,13 @@ def build_ydl_options(prefer_container, restrict_filenames, include_postprocesso
     if include_postprocessors and prefer_container:
         options["merge_output_format"] = prefer_container
         options["postprocessors"] = build_postprocessors(prefer_container)
+
+    # Use cookies if the file exists (for age-gated or private videos)
+    if COOKIES_FILE.exists():
+        options["cookiefile"] = str(COOKIES_FILE)
+        print_log(f"Cookies loaded: {COOKIES_FILE}")
+    else:
+        print_log("No cookies.txt found — running without cookies (public videos only)")
 
     # Remove any None values — yt-dlp doesn't like them
     return {key: value for key, value in options.items() if value is not None}
